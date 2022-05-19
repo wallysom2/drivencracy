@@ -16,7 +16,7 @@ app.post("/poll", async (req, res) => {
         expireAt: joi.date()
     })
     const { error } = schema.validate(req.body, { abortEarly: false });
-    if (error) return res.status(400).send(error.details[0].message);
+    if (error) return res.status(422).send(error.details[0].message);
    
     try {
         await db.collection("polls").insertOne({
@@ -31,7 +31,20 @@ app.post("/poll", async (req, res) => {
     }
 });
 
-const port = process.env.PORT || 3000;
+//listando todas as polls
+app.get("/poll", async (req, res) => {
+    try {
+        const polls = await db.collection("polls").find({}).toArray();
+        res.send(polls);
+    } catch (error) {
+        console.log(error);
+        return res.status(500).send(error);
+    }
+});
+
+
+
+const port = process.env.PORT || 3002;
 app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
 });
