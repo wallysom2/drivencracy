@@ -1,6 +1,5 @@
 import express, { json } from "express";
 import joi from "joi";
-
 import db from "./db.js";
 
 
@@ -53,15 +52,42 @@ app.post("/choice", async (req, res) => {
     const { error } = schema.validate(req.body, { abortEarly: false });
     if (error) return res.status(422).send(error.details[0].message);
 
-    // somente criar uma opção se a poll existir
+    // somente criar uma opção se uma poll existir
+    //Title não pode ser repetido, retornar status 409.
+
     try {
         const poll = await db.collection("polls").findOne({ _id: pollId });
         if (!poll) return res.status(404).send("Poll not found");
+        const choice = await db.collection("choices").findOne({ title, pollId });
+        if (choice) return res.status(409).send("Choice already exists");
         await db.collection("choices").insertOne({
             title,
             pollId
         });
         res.sendStatus(201);
+    } catch (error) {
+        console.log(error);
+        return res.status(500).send(error);
+    }
+});
+
+//listando todas as opções
+app.get("/choice", async (req, res) => {
+    try {
+        const choices = await db.collection("choices").find({}).toArray();
+        res.send(choices);
+    } catch (error) {
+        console.log(error);
+        return res.status(500).send(error);
+    }
+});
+
+////listando todas as opções de uma mesma poll
+app.get("/choice/:pollId", async (req, res) => {
+    try {
+        const pollId = req.params.pollId;
+        const choices = await db.collection("choices").find({ pollId }).toArray();
+        res.send(choices);
     } catch (error) {
         console.log(error);
         return res.status(500).send(error);
