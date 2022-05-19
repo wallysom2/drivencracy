@@ -1,34 +1,37 @@
-import express from "express";
-import { MongoClient } from "mongodb";
-import dotenv from "dotenv";
+import express, { json } from "express";
+import joi from "joi";
+
+import db from "./db.js";
 
 
 const app = express();
-app.use(express.json());
-dotenv.config();
+app.use(json());
 
-// conectando ao banco
-let db;
-const mongoClient = new MongoClient("mongodb://localhost:27017");
+//criando uma poll
+app.post("/poll", async (req, res) => {
+    const { title, expireAt } = req.body;
+    //validação joi
+    const schema = joi.object({
+        title: joi.string().required(),
+        expireAt: joi.date()
+    })
+    const { error } = schema.validate(req.body, { abortEarly: false });
+    if (error) return res.status(400).send(error.details[0].message);
+   
+    try {
+        await db.collection("polls").insertOne({
+            title,
+            expireAt
+        });
+        res.sendStatus(201);
 
-mongoClient.connect().then(() => {
-	db = mongoClient.db("meu_lindo_projeto");
+    } catch (error) {
+        console.log(error);
+        return res.status(500).send(error);
+    }
 });
 
-app.get("/recipes", (req, res) => {
-	// buscando receitas
-	db.collection("recipes").find().toArray().then(recipes => {
-		res.send(recipes);
-	});
-});
-
-app.post("/recipes", (req, res) => {
-	// inserindo receita
-	db.collection("recipes").insertOne(req.body).then(() => {
-		res.sendStatus(201);
-	});
-});
-
-app.listen(5000, () => {
-  console.log("Servidor rodando na porta 5000");
+const port = process.env.PORT || 3000;
+app.listen(port, () => {
+    console.log(`Server is running on port ${port}`);
 });
