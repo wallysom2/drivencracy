@@ -116,21 +116,39 @@ app.post("/choice/:id/vote", async (req, res) => {
     }
 });
 
-//mostrar a choice (t) mais votada de uma poll
+//mostrar a choice  mais votada de uma poll
+/*{
+	_id: "54759eb3c090d83494e2d222",
+	title: "Qual a sua linguagem de programação favorita?"
+	expireAt: "2022-02-14 01:00",
+	result : {
+		title: "Javascript",
+		votes: 487
+	}
+}
+*/
 
 app.get("/poll/:id/result", async (req, res) => {
     try {
         const { id } = req.params;
         const poll = await db.collection("polls").findOne({ _id: ObjectId(id) });
         if (!poll) return res.status(404).send("poll not found");
-        const choice = await db.collection("choices").find({ pollId: id }).sort({ votes: -1 }).limit(1);
+        const choice = await db.collection("choices").findOne({ pollId: id }, { sort: { votes: -1 } });
         if (!choice) return res.status(404).send("choice not found");
-        res.send(choice);
+        const result = {
+            title: choice.title,
+            votes: choice.votes
+        };
+        poll.result = result;
+        res.send(poll);
     } catch (error) {
         console.log(error);
         return res.status(500).send(error);
     }
 });
+
+
+
 
 
 const port = process.env.PORT || 5000;
