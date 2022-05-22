@@ -2,6 +2,7 @@ import express, { json } from "express";
 import { ObjectId } from 'mongodb';
 import joi from "joi";
 import db from "./db.js";
+import chalk from "chalk";
 
 
 const app = express();
@@ -99,41 +100,32 @@ app.get("/poll/:pollId/choice", async (req, res) => {
     }
 });
 
+//dever votar na opção de uma poll especifica e mostrar a opção que o usuario votou e a quantidade de votos.
 
-
-//criando voto
-
-app.post("/choice/vote/:id", async (req, res) => {
-    
+app.post("/choice/:id/vote", async (req, res) => {
     try {
-        const choiceId = await db.collection("choices").findOne({ _id: ObjectId(choiceId) });
-        if (!choiceId) return res.status(404).send("choice not found");
-        const vote = await db.collection("votes").insertOne({
-            createdAt: new Date(),
-            choiceId
-        });
-        if (!vote) return res.status(500).send("Não foi possivel inserir o voto");
-
-        res.sendStatus(201);
-    }
-    catch (error) {
+        const { id } = req.params;
+        const choice = await db.collection("choices").findOne({ _id: ObjectId(id) });
+        if (!choice) return res.status(404).send("choice not found");
+        const votar = await db.collection("choices").updateOne({ _id: ObjectId(id) }, { $inc: { votes: 1 } });
+        if (!votar) return res.status(500).send("Não foi possivel votar");
+        res.sendStatus(200);
+    } catch (error) {
         console.log(error);
         return res.status(500).send(error);
     }
 });
 
+//mostrar a choice (t) mais votada de uma poll
 
-
-//  mostrar opção mais votada
-
-app.get("/choice/vote/:id", async (req, res) => {
+app.get("/poll/:id/result", async (req, res) => {
     try {
-        const choiceId = req.params.id;
-        const choice = await db.collection("choices").find({ choiceId }).toArray();
+        const { id } = req.params;
+        const poll = await db.collection("polls").findOne({ _id: ObjectId(id) });
+        if (!poll) return res.status(404).send("poll not found");
+        const choice = await db.collection("choices").find({ pollId: id }).sort({ votes: -1 }).limit(1);
         if (!choice) return res.status(404).send("choice not found");
-        const voto = await db.collection("votes").find({ choiceId }).toArray();
-        if (!voto) return res.status(404).send("choice not found");
-        res.send(voto);
+        res.send(choice);
     } catch (error) {
         console.log(error);
         return res.status(500).send(error);
@@ -143,5 +135,5 @@ app.get("/choice/vote/:id", async (req, res) => {
 
 const port = process.env.PORT || 5000;
 app.listen(port, () => {
-    console.log(`Server is running on port ${port}`);
+    console.log(chalk.bold.blue(`server running on port ${port}`));
 });

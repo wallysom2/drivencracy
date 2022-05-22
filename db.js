@@ -1,5 +1,6 @@
 import {MongoClient} from "mongodb";
 import dotenv from "dotenv";
+import chalk from "chalk";
 
 dotenv.config();
 
@@ -9,9 +10,9 @@ const mongoClient = new MongoClient(process.env.MONGO_URL);
 try {
   await mongoClient.connect();
   db = mongoClient.db(process.env.DATABASE);
-  console.log("MongoDB database connected.")
+  console.log(chalk.bold.blueBright("Connected to database"));
 } catch (error) {
-  console.log("Erro connecting to database.");
+  console.log(chalk.bold.red("Error connecting to database"));
   console.log(error);
 }
 
