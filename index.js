@@ -1,7 +1,7 @@
 import express, { json } from "express";
+import { ObjectId } from 'mongodb';
 import joi from "joi";
 import db from "./db.js";
-import bodyParser from "body-parser";
 
 
 const app = express();
@@ -55,7 +55,7 @@ app.post("/choice", async (req, res) => {
     if (error) return res.status(422).send(error.details[0].message);
 
     try {
-        const choice = await db.collection("polls").find({ pollId })
+        const choice = await db.collection("polls").find({ pollId });
         if (!choice) return res.status(404).send("poll not found");
         const inserirOpcao = await db.collection("choices").insertOne({
             title,
@@ -86,36 +86,43 @@ app.get("/choice", async (req, res) => {
 
 //listando todas as opções de uma mesma poll.
 
-app.get("/choice/:pollId", async (req, res) => {
-    try {
-        const pollId = req.params.pollId;
-        const choices = await db.collection("choices").find({ pollId }).toArray();
-        if (choices == "") return res.status(404).send("Poll not found");
-        res.send(choices);
 
+app.get("/poll/:pollId/choice", async (req, res) => {
+    const { pollId } = req.params;
+    try {
+        const choice = await db.collection("choices").find({ pollId }).toArray();
+        if (!choice) return res.status(404).send("poll not found");
+        res.send(choice);
     } catch (error) {
         console.log(error);
         return res.status(500).send(error);
     }
 });
+
+
 
 //criando voto
 
 app.post("/choice/vote/:id", async (req, res) => {
+    
     try {
-        const choiceId = req.params.id;
-        const choice = await db.collection("choices").find({ choiceId }).toArray();
-        if (!choice) return res.status(404).send("choice not found");
-        const voto = await db.collection("votes").insertOne({
+        const choiceId = await db.collection("choices").findOne({ _id: ObjectId(choiceId) });
+        if (!choiceId) return res.status(404).send("choice not found");
+        const vote = await db.collection("votes").insertOne({
+            createdAt: new Date(),
             choiceId
         });
-        if (!voto) return res.status(500).send("Não foi possivel inserir o voto");
+        if (!vote) return res.status(500).send("Não foi possivel inserir o voto");
+
         res.sendStatus(201);
-    } catch (error) {
+    }
+    catch (error) {
         console.log(error);
         return res.status(500).send(error);
     }
 });
+
+
 
 //  mostrar opção mais votada
 
