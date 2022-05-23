@@ -19,7 +19,7 @@ app.post("/poll", async (req, res) => {
     const { error } = schema.validate(req.body, { abortEarly: false });
     if (error) return res.status(422).send(error.details[0].message);
 
-  //se expireAt for vazia ou undefined ele vai ser daqui a 30 dias
+    //se expireAt for vazia ou undefined ele vai ser daqui a 30 dias
     if (!expireAt || expireAt === "") {
         expireAt = expireAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
     }
@@ -96,7 +96,6 @@ app.get("/choice", async (req, res) => {
 });
 
 //listando todas as opções de uma mesma poll.
-
 
 app.get("/poll/:pollId/choice", async (req, res) => {
     const { pollId } = req.params;
