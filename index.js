@@ -10,7 +10,7 @@ app.use(json());
 
 //criando uma poll
 app.post("/poll", async (req, res) => {
-    const { title, expireAt } = req.body;
+    let { title, expireAt } = req.body;
     //validação joi
     const schema = joi.object({
         title: joi.string().required(),
@@ -18,6 +18,11 @@ app.post("/poll", async (req, res) => {
     })
     const { error } = schema.validate(req.body, { abortEarly: false });
     if (error) return res.status(422).send(error.details[0].message);
+
+  //se expireAt for vazia ou undefined ele vai ser daqui a 30 dias
+    if (!expireAt || expireAt === "") {
+        expireAt = expireAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+    }
 
     try {
         await db.collection("polls").insertOne({
@@ -54,6 +59,11 @@ app.post("/choice", async (req, res) => {
     })
     const { error } = choiceSchema.validate(req.body, { abortEarly: false });
     if (error) return res.status(422).send(error.details[0].message);
+
+    if (!ObjectId.isValid(pollId)) {
+        return res.status(422).send("Invalid pollId");
+    }
+
 
     try {
         const choice = await db.collection("polls").find({ pollId });
@@ -116,17 +126,7 @@ app.post("/choice/:id/vote", async (req, res) => {
     }
 });
 
-//mostrar a choice  mais votada de uma poll
-/*{
-	_id: "54759eb3c090d83494e2d222",
-	title: "Qual a sua linguagem de programação favorita?"
-	expireAt: "2022-02-14 01:00",
-	result : {
-		title: "Javascript",
-		votes: 487
-	}
-}
-*/
+//mostrar a opção mais votada de uma poll especifica.
 
 app.get("/poll/:id/result", async (req, res) => {
     try {
@@ -146,8 +146,6 @@ app.get("/poll/:id/result", async (req, res) => {
         return res.status(500).send(error);
     }
 });
-
-
 
 
 
